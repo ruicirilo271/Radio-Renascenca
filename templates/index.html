@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#120b18">
+  <meta name="description" content="Rádio Renascença ao vivo com identificação de músicas por Shazam.">
+  <title>{{ station_name }} — Modo Super Deus</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Montserrat:wght@700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <canvas id="starfield" aria-hidden="true"></canvas>
+  <div class="aurora aurora-one" aria-hidden="true"></div>
+  <div class="aurora aurora-two" aria-hidden="true"></div>
+
+  <header class="topbar shell">
+    <a class="brand" href="#inicio" aria-label="Ir para o início">
+      <span class="brand-mark">RR</span>
+      <span class="brand-copy">
+        <strong>RENASCENÇA</strong>
+        <small>MODO SUPER DEUS</small>
+      </span>
+    </a>
+
+    <div class="topbar-actions">
+      <div class="live-pill" id="livePill">
+        <span class="live-dot"></span>
+        <span id="liveLabel">PRONTA</span>
+      </div>
+      <div class="clock-box">
+        <strong id="clock">--:--</strong>
+        <small id="dateLabel">Portugal</small>
+      </div>
+    </div>
+  </header>
+
+  <main id="inicio" class="shell page-content">
+    <section class="hero glass-panel">
+      <div class="hero-glow" aria-hidden="true"></div>
+
+      <div class="cover-zone">
+        <div class="orbit orbit-one" aria-hidden="true"></div>
+        <div class="orbit orbit-two" aria-hidden="true"></div>
+        <div class="album-frame" id="albumFrame">
+          <img id="cover" src="{{ url_for('static', filename='default-cover.svg') }}" alt="Capa da emissão ou da música identificada">
+          <div class="album-shine" aria-hidden="true"></div>
+          <span class="on-air-stamp">NO AR</span>
+        </div>
+      </div>
+
+      <div class="hero-copy">
+        <p class="eyebrow"><span></span> EMISSÃO NACIONAL EM DIRETO</p>
+        <h1>{{ station_name }}</h1>
+        <p class="station-slogan">{{ station_subtitle }}</p>
+
+        <div class="now-playing-card">
+          <div class="music-note" aria-hidden="true">♪</div>
+          <div class="track-copy">
+            <small id="trackKicker">AGORA NA RÁDIO</small>
+            <strong id="trackTitle">Emissão em direto</strong>
+            <span id="trackArtist">Liga a rádio para começar</span>
+          </div>
+          <button class="icon-button" id="copyTrackButton" type="button" title="Copiar nome da música" aria-label="Copiar nome da música">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 8h11v11H8z"></path><path d="M5 16H4V5h11v1"></path></svg>
+          </button>
+        </div>
+
+        <div class="hero-actions">
+          <button id="mainPlayButton" class="divine-play" type="button" aria-label="Ligar rádio">
+            <span class="play-aura"></span>
+            <svg id="mainPlayIcon" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"></path></svg>
+            <span id="mainPlayText">LIGAR RÁDIO</span>
+          </button>
+
+          <button id="identifyButton" class="identify-button" type="button">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v18M8 7v10M16 7v10M4 10v4M20 10v4"></path></svg>
+            <span>IDENTIFICAR MÚSICA</span>
+          </button>
+        </div>
+
+        <div class="status-line" id="statusLine" role="status" aria-live="polite">
+          <span class="status-led"></span>
+          <span>Pronta para transmitir</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="visualizer-panel glass-panel" aria-label="Equalizador da rádio">
+      <div class="section-heading compact-heading">
+        <div>
+          <p class="eyebrow"><span></span> ENERGIA DO STREAM</p>
+          <h2>Espectro em tempo real</h2>
+        </div>
+        <div class="quality-badge">
+          <span>LIVE</span>
+          <strong>HD AUDIO</strong>
+        </div>
+      </div>
+      <canvas id="visualizer" height="150"></canvas>
+      <div class="frequency-labels" aria-hidden="true">
+        <span>60 Hz</span><span>250 Hz</span><span>1 kHz</span><span>4 kHz</span><span>16 kHz</span>
+      </div>
+    </section>
+
+    <section class="dashboard-grid">
+      <article class="history-panel glass-panel">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow"><span></span> MEMÓRIA MUSICAL</p>
+            <h2>Últimas identificadas</h2>
+          </div>
+          <button id="clearHistoryButton" class="text-button" type="button">Limpar</button>
+        </div>
+        <div id="historyList" class="track-list"></div>
+      </article>
+
+      <aside class="side-stack">
+        <article class="stats-panel glass-panel">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow"><span></span> SISTEMA</p>
+              <h2>Estado da emissão</h2>
+            </div>
+          </div>
+          <div class="stats-grid">
+            <div class="stat-card">
+              <span>STREAM</span>
+              <strong id="streamState">OFF</strong>
+              <small>StreamTheWorld</small>
+            </div>
+            <div class="stat-card">
+              <span>SHAZAM</span>
+              <strong id="shazamState">READY</strong>
+              <small id="shazamDetail">Amostra otimizada</small>
+            </div>
+            <div class="stat-card">
+              <span>HISTÓRICO</span>
+              <strong id="historyCount">0</strong>
+              <small>Últimas 10</small>
+            </div>
+            <div class="stat-card">
+              <span>SESSÃO</span>
+              <strong id="sessionTime">00:00</strong>
+              <small>Tempo a ouvir</small>
+            </div>
+          </div>
+        </article>
+
+        <article class="info-panel glass-panel">
+          <div class="rr-monogram">RR</div>
+          <div>
+            <p>Informação, música, desporto e companhia.</p>
+            <a href="https://rr.pt/" target="_blank" rel="noopener noreferrer">Visitar o site oficial <span>↗</span></a>
+          </div>
+        </article>
+      </aside>
+    </section>
+  </main>
+
+  <div class="bottom-spacer" aria-hidden="true"></div>
+
+  <footer class="player-dock" id="playerDock">
+    <div class="dock-inner shell">
+      <div class="dock-track">
+        <img id="dockCover" src="{{ url_for('static', filename='default-cover.svg') }}" alt="">
+        <div>
+          <strong id="dockTitle">Rádio Renascença</strong>
+          <span id="dockArtist">Emissão em direto</span>
+        </div>
+      </div>
+
+      <div class="dock-center">
+        <button id="dockPlayButton" class="dock-play" type="button" aria-label="Ligar rádio">
+          <svg id="dockPlayIcon" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"></path></svg>
+        </button>
+        <div class="stream-line">
+          <span id="streamProgress"></span>
+        </div>
+        <span class="live-time">AO VIVO</span>
+      </div>
+
+      <div class="dock-volume">
+        <button id="muteButton" class="volume-button" type="button" aria-label="Silenciar">
+          <svg id="volumeIcon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z"></path><path d="M16 9.5c1.3 1.4 1.3 3.6 0 5M18.5 7c2.8 2.8 2.8 7.2 0 10"></path></svg>
+        </button>
+        <input id="volumeSlider" type="range" min="0" max="1" step="0.01" value="0.82" aria-label="Volume">
+        <span id="volumeValue">82%</span>
+      </div>
+    </div>
+  </footer>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <audio id="radioAudio" preload="none" crossorigin="anonymous"></audio>
+
+  <script>
+    window.RADIO_CONFIG = {
+      streamUrl: {{ stream_url|tojson }},
+      stationName: {{ station_name|tojson }},
+      defaultCover: {{ url_for('static', filename='default-cover.svg')|tojson }}
+    };
+  </script>
+  <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>

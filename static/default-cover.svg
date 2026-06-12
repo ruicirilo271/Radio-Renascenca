@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000" role="img" aria-labelledby="title desc">
+  <title id="title">Rádio Renascença</title>
+  <desc id="desc">Capa abstrata em vermelho, dourado e roxo para a emissão da Rádio Renascença.</desc>
+  <defs>
+    <radialGradient id="bg" cx="22%" cy="18%" r="95%">
+      <stop offset="0" stop-color="#5d1d69"/>
+      <stop offset=".46" stop-color="#241126"/>
+      <stop offset="1" stop-color="#09070d"/>
+    </radialGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#fff2bd"/>
+      <stop offset=".46" stop-color="#f7b955"/>
+      <stop offset="1" stop-color="#e43143"/>
+    </linearGradient>
+    <linearGradient id="red" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ff6b78"/>
+      <stop offset="1" stop-color="#a71534"/>
+    </linearGradient>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="18" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <pattern id="grid" width="54" height="54" patternUnits="userSpaceOnUse">
+      <path d="M54 0H0V54" fill="none" stroke="#fff" stroke-opacity=".035"/>
+    </pattern>
+  </defs>
+  <rect width="1000" height="1000" fill="url(#bg)"/>
+  <rect width="1000" height="1000" fill="url(#grid)"/>
+  <circle cx="130" cy="160" r="260" fill="#7e2d91" opacity=".22"/>
+  <circle cx="860" cy="830" r="330" fill="#e43143" opacity=".13"/>
+  <circle cx="500" cy="500" r="340" fill="none" stroke="#f7b955" stroke-opacity=".16" stroke-width="2"/>
+  <circle cx="500" cy="500" r="280" fill="none" stroke="#fff" stroke-opacity=".08" stroke-width="2" stroke-dasharray="5 16"/>
+  <path d="M120 605C230 380 320 760 430 455s188 180 263-24 126 37 187-105" fill="none" stroke="url(#gold)" stroke-width="14" stroke-linecap="round" filter="url(#glow)"/>
+  <path d="M118 650C246 520 307 720 424 548s193 108 293-44 121 14 170-66" fill="none" stroke="url(#red)" stroke-width="5" stroke-linecap="round" opacity=".7"/>
+  <g transform="translate(500 445)">
+    <rect x="-190" y="-190" width="380" height="380" rx="105" fill="#160a16" fill-opacity=".72" stroke="url(#gold)" stroke-width="5" transform="rotate(-4)"/>
+    <text x="0" y="48" text-anchor="middle" fill="url(#gold)" font-family="Arial, Helvetica, sans-serif" font-size="210" font-weight="900" letter-spacing="-22">RR</text>
+  </g>
+  <text x="500" y="770" text-anchor="middle" fill="#fffaf3" font-family="Arial, Helvetica, sans-serif" font-size="48" font-weight="900" letter-spacing="13">RENASCENÇA</text>
+  <text x="500" y="822" text-anchor="middle" fill="#f7b955" font-family="Arial, Helvetica, sans-serif" font-size="19" font-weight="700" letter-spacing="9">MODO SUPER DEUS</text>
+  <circle cx="500" cy="875" r="7" fill="#ff5261" filter="url(#glow)"/>
+</svg>
