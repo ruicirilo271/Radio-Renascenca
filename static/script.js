@@ -5,6 +5,7 @@ const HISTORY_KEY = "rr_super_deus_history_v1";
 const VOLUME_KEY = "rr_super_deus_volume_v1";
 const MAX_HISTORY = 10;
 const AUTO_IDENTIFY_MS = 150000;
+const SAMPLE_KEY = "rr_super_deus_last_sample_v7";
 
 const audio = document.getElementById("radioAudio");
 const mainPlayButton = document.getElementById("mainPlayButton");
@@ -35,6 +36,9 @@ const historyCount = document.getElementById("historyCount");
 const historyList = document.getElementById("historyList");
 const sessionTime = document.getElementById("sessionTime");
 const toast = document.getElementById("toast");
+const sampleTools = document.getElementById("sampleTools");
+const downloadSampleButton = document.getElementById("downloadSampleButton");
+const sampleInfo = document.getElementById("sampleInfo");
 const visualizer = document.getElementById("visualizer");
 const visualizerContext = visualizer.getContext("2d");
 
@@ -51,6 +55,7 @@ let sourceNode = null;
 let analyserReady = false;
 let visualizerAnimation = null;
 let lastTrack = null;
+let lastSample = null;
 
 const playPath = '<path d="M8 5v14l11-7z"></path>';
 const pausePath = '<path d="M7 5h4v14H7zM13 5h4v14h-4z"></path>';
@@ -223,15 +228,48 @@ function scheduleAutomaticIdentification() {
   autoIdentifyTimer = window.setInterval(() => identifyTrack(false), AUTO_IDENTIFY_MS);
 }
 
+async function createServerSample(force = true) {
+  shazamState.textContent = "REC";
+  shazamDetail.textContent = "A preparar amostra";
+  setStatus("A abrir o stream, descartar o início repetido e gravar a parte útil…");
+
+  const response = await fetch(`/api/sample${force ? "?force=1" : ""}`, {
+    method: "POST",
+    headers: { "Accept": "application/json" }
+  });
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok || !data.ok) {
+    throw new Error(data.error || "Falha ao gravar a amostra MP3.");
+  }
+
+  lastSample = data;
+  try { localStorage.setItem(SAMPLE_KEY, JSON.stringify(data)); } catch {}
+  updateSampleUI(data);
+  return data;
+}
+
+function updateSampleUI(sample) {
+  if (!sampleTools || !downloadSampleButton || !sampleInfo || !sample) return;
+  const bytes = Number(sample.mp3_bytes || sample.raw_bytes || 0);
+  const kb = bytes ? `${Math.round(bytes / 1024)} KB` : "ficheiro criado";
+  const seconds = sample.capture_seconds ? `${sample.capture_seconds}s` : "amostra";
+  const skipped = Number(sample.skipped_seconds || sample.sample_skipped_seconds || 0);
+  const skipText = skipped ? ` · descartou ${skipped}s iniciais` : "";
+  sampleTools.hidden = false;
+  sampleInfo.textContent = `Amostra ${seconds}${skipText} · ${kb} · /tmp`;
+  downloadSampleButton.disabled = false;
+}
+
 async function identifyTrack(force = true) {
   if (isIdentifying) return;
   isIdentifying = true;
   identifyButton.classList.add("loading");
   identifyButton.disabled = true;
-  identifyButton.querySelector("span").textContent = "A OUVIR O STREAM…";
-  shazamState.textContent = "LISTEN";
-  shazamDetail.textContent = "A gravar amostra";
-  setStatus("A gravar uma pequena amostra para o Shazam…");
+  identifyButton.querySelector("span").textContent = "A IDENTIFICAR…";
+  shazamState.textContent = "REC";
+  shazamDetail.textContent = "Shazam/Live";
+  setStatus("A identificar a música da Renascença…");
 
   try {
     const response = await fetch(`/api/identify${force ? "?force=1" : ""}`, {
@@ -244,24 +282,49 @@ async function identifyTrack(force = true) {
       throw new Error(data.error || "Falha ao identificar a música.");
     }
 
+    if (data.sample_url || data.download_url) {
+      lastSample = {
+        sample_id: data.sample_id || "latest",
+        download_url: data.sample_url || data.download_url,
+        raw_bytes: data.sample_bytes || 0,
+        capture_seconds: data.sample_seconds || 0,
+        skipped_seconds: data.sample_skipped_seconds || 0
+      };
+      updateSampleUI(lastSample);
+    }
+
     if (!data.identified) {
       shazamState.textContent = "NO MATCH";
-      shazamDetail.textContent = "Tenta mais tarde";
-      setStatus(data.message || "Nenhuma música reconhecida nesta amostra.");
-      if (force) showToast(data.message || "O Shazam não reconheceu esta amostra.");
+      shazamDetail.textContent = data.sample_url ? "Amostra disponível" : "Sem metadados";
+      setStatus(data.message || "Ainda não encontrei a música. Pode estar a passar notícia, publicidade ou programa sem metadados.");
+      if (force) showToast(data.message || "Ainda não encontrei a música.");
       return;
     }
 
     applyTrack(data);
     addTrackToHistory(data);
     shazamState.textContent = "FOUND";
-    shazamDetail.textContent = data.cached ? "Resultado em cache" : `${data.sample_seconds || 8}s analisados`;
+    if (data.source && String(data.source).includes("onlineradiobox")) {
+      shazamDetail.textContent = data.cached ? "OnlineRadioBox cache" : "OnlineRadioBox Live";
+    } else if (data.source && String(data.source).includes("myradioonline")) {
+      shazamDetail.textContent = data.cached ? "Playlist em cache" : "MyRadioOnline Live";
+    } else if (data.source && String(data.source).includes("radioplayer")) {
+      shazamDetail.textContent = data.cached ? "Radioplayer em cache" : "Radioplayer Live";
+    } else if (data.source && String(data.source).includes("triton")) {
+      shazamDetail.textContent = data.cached ? "Metadados em cache" : "Triton Now Playing";
+    } else if (data.source && String(data.source).includes("icy")) {
+      shazamDetail.textContent = "ICY StreamTitle";
+    } else if (data.source && String(data.source).includes("scrape")) {
+      shazamDetail.textContent = "Página Ao Vivo";
+    } else {
+      shazamDetail.textContent = data.cached ? "Resultado em cache" : "Shazam analisado";
+    }
     setStatus(`Identificada: ${data.artist} — ${data.title}`, "success");
     showToast(`♪ ${data.artist} — ${data.title}`);
   } catch (error) {
     console.error(error);
     shazamState.textContent = "ERROR";
-    shazamDetail.textContent = "Verifica o servidor";
+    shazamDetail.textContent = "Verifica servidor";
     setStatus(error.message || "Erro durante a identificação.", "error");
     if (force) showToast(error.message || "Não foi possível identificar a música.");
   } finally {
@@ -275,7 +338,7 @@ async function identifyTrack(force = true) {
 function applyTrack(track) {
   lastTrack = track;
   const image = track.cover || track.background || CONFIG.defaultCover;
-  trackKicker.textContent = "IDENTIFICADA PELO SHAZAM";
+  trackKicker.textContent = track.source ? "IDENTIFICADA PELA PLAYLIST LIVE" : "IDENTIFICADA PELO SHAZAM";
   trackTitle.textContent = track.title || "Música desconhecida";
   trackArtist.textContent = track.album ? `${track.artist} · ${track.album}` : track.artist;
   dockTitle.textContent = track.title || CONFIG.stationName;
@@ -506,7 +569,12 @@ async function checkServerStatus() {
       shazamState.textContent = "SETUP";
       shazamDetail.textContent = "FFmpeg em falta";
     } else {
-      shazamDetail.textContent = `${data.identify_seconds}s por amostra`;
+      if (data.platform === "vercel") {
+        shazamDetail.textContent = "Playlist Live";
+      } else {
+        const skip = data.local_skip_start_seconds ? ` + skip ${data.local_skip_start_seconds}s` : "";
+        shazamDetail.textContent = `${data.identify_seconds_local || data.capture_seconds}s WAV${skip}`;
+      }
     }
   } catch {
     shazamState.textContent = "OFFLINE";
@@ -519,6 +587,11 @@ dockPlayButton.addEventListener("click", toggleRadio);
 identifyButton.addEventListener("click", () => identifyTrack(true));
 volumeSlider.addEventListener("input", (event) => updateVolume(event.target.value));
 muteButton.addEventListener("click", toggleMute);
+if (downloadSampleButton) downloadSampleButton.addEventListener("click", () => {
+  const sample = lastSample || (() => { try { return JSON.parse(localStorage.getItem(SAMPLE_KEY) || "null"); } catch { return null; } })();
+  const url = sample?.download_url || sample?.raw_download_url || "/api/sample/latest";
+  window.open(url, "_blank", "noopener,noreferrer");
+});
 document.getElementById("clearHistoryButton").addEventListener("click", clearHistory);
 document.getElementById("copyTrackButton").addEventListener("click", copyCurrentTrack);
 
@@ -541,6 +614,11 @@ window.addEventListener("resize", resizeVisualizer, { passive: true });
 window.addEventListener("beforeunload", () => {
   if (visualizerAnimation) cancelAnimationFrame(visualizerAnimation);
 });
+
+try {
+  lastSample = JSON.parse(localStorage.getItem(SAMPLE_KEY) || "null");
+  if (lastSample?.download_url) updateSampleUI(lastSample);
+} catch {}
 
 loadSavedVolume();
 renderHistory();

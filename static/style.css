@@ -1127,3 +1127,51 @@ button {
     animation-iteration-count: 1 !important;
   }
 }
+
+.sample-tools {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 14px;
+  flex-wrap: wrap;
+}
+
+.sample-tools[hidden] {
+  display: none !important;
+}
+
+.sample-download {
+  border: 1px solid rgba(255, 221, 163, .42);
+  border-radius: 999px;
+  padding: 10px 16px;
+  color: #fff3d8;
+  background: linear-gradient(135deg, rgba(255, 215, 126, .16), rgba(228, 49, 67, .20));
+  box-shadow: 0 12px 34px rgba(228, 49, 67, .16);
+  font-family: inherit;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: .1em;
+  cursor: pointer;
+  transition: transform .2s ease, border-color .2s ease, background .2s ease;
+}
+
+.sample-download:hover {
+  transform: translateY(-1px);
+  border-color: rgba(255, 221, 163, .75);
+  background: linear-gradient(135deg, rgba(255, 215, 126, .24), rgba(228, 49, 67, .30));
+}
+
+.sample-download:disabled {
+  opacity: .45;
+  cursor: wait;
+}
+
+.sample-tools small {
+  color: var(--muted);
+  font-size: 10px;
+  letter-spacing: .04em;
+}
+
+@media (max-width: 1040px) {
+  .sample-tools { justify-content: center; }
+}

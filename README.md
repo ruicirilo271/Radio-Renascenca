@@ -1,18 +1,66 @@
-# Rádio Renascença — Modo Super Deus
+# Rádio Renascença — Modo Super Deus v7
 
-Aplicação Flask com:
+Esta versão corrige o problema das amostras repetidas.
 
-- stream em direto;
-- player fixo no rodapé;
-- equalizador visual e Web Audio quando o stream permite CORS;
-- identificação manual e automática de músicas com ShazamIO;
-- amostra WAV curta criada pelo FFmpeg incluído pelo `imageio-ffmpeg`;
-- capa do Shazam com alternativa no iTunes;
-- histórico local das últimas 10 músicas;
-- design responsivo para computador e telemóvel;
-- estrutura compatível com Vercel.
+## O que estava a acontecer
 
-## Executar no Windows
+A identificação no servidor abre uma ligação nova ao StreamTheWorld. Na Renascença, essa ligação nova pode receber sempre o mesmo início/pré-roll, mesmo que no browser já esteja uma música a meio. Por isso esperar no browser não muda a amostra gravada pelo servidor.
+
+## Correção v7
+
+No PC/local:
+
+1. O FFmpeg abre o stream.
+2. Mantém a mesma ligação aberta.
+3. Descarta os primeiros segundos repetidos.
+4. Só depois grava uma amostra WAV.
+5. O Shazam analisa essa amostra.
+6. Se o Shazam falhar, a app tenta playlist/live segura como fallback.
+
+Por defeito:
+
+- `LOCAL_SKIP_START_SECONDS=45`
+- `IDENTIFY_SECONDS=12`
+
+Podes ajustar no ficheiro `.env`:
+
+```env
+LOCAL_SKIP_START_SECONDS=60
+IDENTIFY_SECONDS=12
+```
+
+No Vercel:
+
+- A identificação principal continua por playlist/live.
+- A amostra continua disponível apenas para diagnóstico, porque em serverless ela pode repetir o mesmo pré-roll.
+
+## Testes rápidos
+
+Depois de correr no PC:
+
+```txt
+http://127.0.0.1:5000/api/status
+```
+
+Gravar amostra com o padrão:
+
+```txt
+http://127.0.0.1:5000/api/sample
+```
+
+Gravar amostra descartando 60 segundos:
+
+```txt
+http://127.0.0.1:5000/api/sample?skip=60&seconds=12
+```
+
+Identificar com Shazam depois de descartar 60 segundos:
+
+```txt
+http://127.0.0.1:5000/api/identify?force=1&skip=60&seconds=12
+```
+
+## Executar no PC
 
 ```powershell
 python -m venv .venv
@@ -22,19 +70,34 @@ pip install -r requirements.txt
 python app.py
 ```
 
-Abre `http://127.0.0.1:5000`.
+Abrir:
+
+```txt
+http://127.0.0.1:5000
+```
 
 ## Publicar no Vercel
 
-1. Coloca todos os ficheiros no GitHub, mantendo as pastas `api`, `templates` e `static`.
-2. Importa o repositório no Vercel.
-3. Não cries uma configuração `functions` para `app.py`; a função correta é `api/index.py`.
-4. Publica. Não são necessárias variáveis de ambiente para o stream fornecido.
+Mantém a estrutura:
 
-## Variáveis opcionais
+```txt
+api/index.py
+app.py
+static/
+templates/
+requirements.txt
+vercel.json
+.python-version
+```
 
-Copia `.env.example` para `.env` quando quiseres alterar o stream, o nome ou a duração da amostra. A aplicação não necessita de chave de API do Shazam nem do iTunes.
+Se usares variáveis no Vercel, podes definir:
 
-## Nota sobre a identificação
+```env
+RADIO_STREAM_URL=https://29053.live.streamtheworld.com/RADIO_RENASCENCA_SC
+```
 
-A Renascença também transmite notícias, publicidade e programas falados. Nesses momentos, é normal o Shazam não devolver uma música. A aplicação usa uma amostra de 8 segundos para evitar funções demasiado longas no Vercel.
+No PC, podes deixar sem `RADIO_STREAM_URL`, porque a app usa por defeito:
+
+```txt
+https://29053.live.streamtheworld.com/RADIO_RENASCENCA_SC?dist=onlineradiobox
+```
